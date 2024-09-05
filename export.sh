@@ -2,10 +2,10 @@
 
 # Norm args -----------------------------------------------------------------------------------------------------------
 TRTEXEC_PATH=trtexec
-DYNAMIC=false
-PRECISION="best" # "fp32", "fp16", "int8", "best"
+DYNAMIC=true
+PRECISION="fp16" # "fp32", "fp16", "int8", "best"
 WORKSPACE_SIZE=2048 # MB
-ONNX_MODEL_PATH="/home/seeking/llf/code/trt-export-script/xsk-D2-v8n-1x3x256x256.onnx"
+ONNX_MODEL_PATH="/home/seeking/llf/code/trt-export-script/xsk-D2-v8n-1x3x256x256.dynamic.onnx"
 
 # Int8 Args --------------------------------------------------------------------------------------------------------------
 # Only use in int8 mode
@@ -17,8 +17,8 @@ CALIB_CACHE_FILE="model_int8_calibration.cache"
 MIN_BATCH=1
 MAX_BATCH=8
 CHANNEL=3
-HEIGHT=288
-WIDTH=288
+HEIGHT=256
+WIDTH=256
 INPUT_NAME="images" 
 
 # Check ----------------------------------------------------------------------------------------------------------------

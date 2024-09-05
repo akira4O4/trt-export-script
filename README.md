@@ -30,14 +30,14 @@ git clone https://github.com/akira4O4/trt-export-script.git
 | `PRECISION`       | `str`  | `fp32` `fp16`,`int8` `best`                |
 | `WORKSPACE_SIZE`  | `int`  | Workspace memory size (MB)                 |
 | `ONNX_MODEL_PATH` | `str`  | ONNX model path                            |
-| `CALIB_DATA_PATH` | `str`  | Calib data path  **(only in int8 mode)**                          |
-| `CALIB_CACHE_FILE`| `str`  | Calib cache data path **(only in int8 mode)**                            |
-| `MIN_BATCH`       | `int`  | Min input batch **(only in dynamic mode)** |
+| `CALIB_DATA_PATH` | `str`  | Calib data path  **(int8 mode)**                          |
+| `CALIB_CACHE_FILE`| `str`  | Calib cache data path **(int8 mode)**                            |
+| `MIN_BATCH`       | `int`  | Min input batch **(dynamic mode)** |
 | `MAX_BATCH`       | `int`  | Max input batch **(only in dynamic mode)** |
-| `CHANNEL`         | `int`  | Image channel **(only in dynamic mode)**   |
-| `HEIGHT`          | `int`  | Image height **(only in dynamic mode)**    |
-| `WIDTH`           | `int`  | Image width **(only in dynamic mode)**     |
-| `IMAGE`           | `str`  | Model input name **(only in dynamic mode)**     |
+| `CHANNEL`         | `int`  | Image channel **(dynamic mode)**   |
+| `HEIGHT`          | `int`  | Image height **(dynamic mode)**    |
+| `WIDTH`           | `int`  | Image width **(dynamic mode)**     |
+| `INPUT_NAME`           | `str`  | Model input name **(dynamic mode)**     |
 
 ---
 
