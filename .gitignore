@@ -1,2 +1,8 @@
 .idea
 .vscode
+*.pth
+*.onnx
+*.engine
+build/
+models/
+images/
