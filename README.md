@@ -5,7 +5,7 @@
 ## Intro
 
 This shell script is designed to automate the conversion of `ONNX` models to `TensorRT` engines using trtexec, with support for different precision levels and dynamic/static shape optimizations. The script supports:
-
+- **Linux or Windows**
 - **Precision Handling**: Converts models into `fp32`, `fp16`, `int8`, or `best` precision, with optional calibration for int8 mode.
 - **Dynamic or Static Models**: Provides an option to convert models with `dynamic` shapes or `static` shapes, depending on user preference.
 - **Workspace and Calibration Management**: Allows configuration of workspace size and provides support for INT8 `calibration data` and `calibration cache` files.
@@ -42,8 +42,14 @@ git clone https://github.com/akira4O4/trt-export-script.git
 ---
 
 ## Run
-
+Add TensorRT to the system environment variables to run this file from anywhere.
+### Linux
 ```bash
 sudo chmod +x export.sh
 ./export.sh
+```
+### Windows
+
+```bat
+./export.bat
 ```
