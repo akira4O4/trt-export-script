@@ -1,23 +1,25 @@
 #!/bin/bash
+
+# Norm args -------------------------------------------------------------------
 TRTEXEC_PATH=trtexec
 DYNAMIC=false
-MODE="onnx"     # onnx 或 engine
-MODEL_PATH=""
-WORKSPACE=2048  # 工作区大小（MB）
-DLA_CORE_ID=""
-VERBOSE=false
+MODE="onnx"             # onnx 或 engine
+MODEL_PATH="model.onnx" #model.onnx or model.engine
+WORKSPACE=2048          # 工作区大小（MB）
 INPUT_NAME="images"
 BATCH=1
 FP16=false
 INT8=false
 CALIB=""
 THREADS=false
+VERBOSE=false
+DLA_CORE_ID=""
 
 ITERATIONS=1    # 指定推理执行的次数
 DURATION=0      # 指定测试持续的时间(秒)
 STREAMS=1       # 指定并行执行的流的数量
 
-# 动态模型参数
+# Dynamic args ----------------------------------------------------------------
 MIN_BATCH=1
 OPT_BATCH=1
 MAX_BATCH=8
@@ -31,6 +33,8 @@ DURATION_FLAG="--duration=${DURATION}"
 ITERATIONS_FLAG="--iterations=${ITERATIONS}"
 # -----------------------------------------------------------------------------
 STREAMS_FLAG="--streams=${STREAMS}"
+# -----------------------------------------------------------------------------
+WORKSPACE_FLAG="--workspace=$WORKSPACE"
 # -----------------------------------------------------------------------------
 if [ "$MODE" = "onnx" ]; then
     MODEL_FLAG="--onnx=$MODEL_PATH"
@@ -86,8 +90,6 @@ if [ -z "$DLA_CORE_ID" ]; then
 else
     DLA_FLAG="--useDLACore=$DLA_CORE_ID"
 fi
-# -----------------------------------------------------------------------------
-WORKSPACE_FLAG="--workspace=$WORKSPACE"
 # -----------------------------------------------------------------------------
 
 # 执行 trtexec 命令
