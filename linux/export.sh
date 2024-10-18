@@ -15,6 +15,7 @@ CALIB_CACHE_FILE="model_int8_calibration.cache"
 # Dynamic args ----------------------------------------------------------------------------------------------------------
 # Only use in dynamic mode
 MIN_BATCH=1
+OPT_BATCH=0
 MAX_BATCH=8
 CHANNEL=3
 HEIGHT=256
@@ -76,7 +77,7 @@ if [ -e "$ONNX_MODEL_PATH" ]; then
     ENGINE_MODEL_PATH="${ENGINE_MODEL_NAME}.dynamic.engine"
   
     MIN_BATCH_FLAG="--minShapes=${INPUT_NAME}:${MIN_BATCH}x${CxHxW}"
-    OPT_BATCH_FLAG="--optShapes=${INPUT_NAME}:${MAX_BATCH}x${CxHxW}"
+    OPT_BATCH_FLAG="--optShapes=${INPUT_NAME}:${OPT_BATCH}x${CxHxW}"
     MAX_BATCH_FLAG="--maxShapes=${INPUT_NAME}:${MAX_BATCH}x${CxHxW}"
   else
     MIN_BATCH_FLAG=""
