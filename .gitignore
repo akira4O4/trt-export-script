@@ -8,7 +8,6 @@ models/
 images/
 profile.json
 times.json
-.gitignore
 trtexec_log.txt
-.gitignore
 layer_info.json
+output.json
