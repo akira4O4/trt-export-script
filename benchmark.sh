@@ -1,111 +1,130 @@
 #!/bin/bash
 
-# Norm args -------------------------------------------------------------------
-TRTEXEC_PATH=trtexec
-DYNAMIC=false
-MODE="onnx"             # onnx 或 engine
-MODEL_PATH="model.onnx" #model.onnx or model.engine
-WORKSPACE=2048          # 工作区大小（MB）
-INPUT_NAME="images"
-BATCH=1
-FP16=false
-INT8=false
-CALIB=""
-THREADS=false
-VERBOSE=false
-DLA_CORE_ID=""
+#===Model Options=== 
+trtexec_path=trtexec
+model_path="/home/seeking/llf/code/trtexec-shell/MNIST/mnist-1x3x28x28.trt850.fp32.static.engine" #model.onnx or model.engine
+workspace=2048          # 工作区大小（MiB）
 
-ITERATIONS=1    # 指定推理执行的次数
-DURATION=0      # 指定测试持续的时间(秒)
-STREAMS=1       # 指定并行执行的流的数量
+# === Inference Options ===
+batch=1
+shapes=""       #e.g.shapes=input_tensor:1x3x224x224
+iterations=3    # 指定推理执行的次数 (iterations>durations)
+duration=1      # 指定测试持续的时间(秒)
+warm_up=100
+streams=1       # 指定并行执行的流的数量
+threads=false
+fp16=true
+int8=false
+best=false
+calib=""
+verbose=false
 
-# Dynamic args ----------------------------------------------------------------
-MIN_BATCH=1
-OPT_BATCH=1
-MAX_BATCH=8
-CHANNEL=3
-HEIGHT=256
-WIDTH=256
+# === Reporting Options ===
+export_times="./times.json"
+export_output="./output.json"
+export_profile="./profile.json"
+export_layer_info="./layer_info.json"
+
+#===System Options===
+device=0
+use_dla_core="" #0,1 (DLA 通常配合 FP16 模式使用)
 
 # -----------------------------------------------------------------------------
-DURATION_FLAG="--duration=${DURATION}"
+batch_flag="--batch=${batch}"
+warm_up_flag="--warmUp=${warm_up}"
+device_flag="--device=${device}"
+duration_flag="--duration=${duration}"
+iterations_flag="--iterations=${iterations}"
+streams_flag="--streams=${streams}"
+workspace_flag="--workspace=${workspace}"
+export_times_flag="--exportTimes=${export_times}"
+export_output_flag="--exportOutput=${export_output}"
+export_profile_flag="--exportProfile=${export_profile}"
+export_layer_info_flag="--exportLayerInfo=${export_layer_info}"
 # -----------------------------------------------------------------------------
-ITERATIONS_FLAG="--iterations=${ITERATIONS}"
-# -----------------------------------------------------------------------------
-STREAMS_FLAG="--streams=${STREAMS}"
-# -----------------------------------------------------------------------------
-WORKSPACE_FLAG="--workspace=$WORKSPACE"
-# -----------------------------------------------------------------------------
-if [ "$MODE" = "onnx" ]; then
-    MODEL_FLAG="--onnx=$MODEL_PATH"
+if [ -z "$shapes" ]; then
+    shapes_flag=""
 else
-    MODEL_FLAG="--loadEngine=$MODEL_PATH"
+    shapes_flag="--shapes=${shapes}"
 fi
 # -----------------------------------------------------------------------------
-if [ "$VERBOSE" = true ]; then
-    VERBOSE_FLAG="--verbose"
+file_extension="${model_path##*.}"
+if [ "$file_extension" = "onnx" ]; then
+    model_flag="--onnx=$model_path"
+elif [ "$file_extension" = "engine" ]; then
+    model_flag="--loadEngine=$model_path"
+elif [ "$file_extension" = "plan" ]; then
+    model_flag="--loadEngine=$model_path"
+elif [ "$file_extension" = "trt" ]; then
+    model_flag="--loadEngine=$model_path"
 else
-    VERBOSE_FLAG=""
+    echo "Unknown model type: $file_extension"
+    echo "Please provide a valid ONNX or TensorRT engine file."
+    exit 1
 fi
 # -----------------------------------------------------------------------------
-if [ "$FP16" = true ]; then
-    FP16_FLAG="--fp16"
+if [ "$verbose" = true ]; then
+    verbose_flag="--verbose"
 else
-    FP16_FLAG=""
+    verbose_flag=""
 fi
 # -----------------------------------------------------------------------------
-if [ "$INT8" = true ]; then
-    if [ -z "$CALIB" ]; then
+if [ "$best" = true ]; then
+    best_flag="--best"
+else
+    best_flag=""
+fi
+# -----------------------------------------------------------------------------
+if [ "$fp16" = true ]; then
+    fp16_flag="--fp16"
+else
+    fp16_flag=""
+fi
+# -----------------------------------------------------------------------------
+if [ "$int8" = true ]; then
+    if [ -z "$calib" ]; then
         echo "Error: INT8 mode enabled but no calibration file specified."
         exit 1
     fi
-    INT8_FLAG="--int8"
-    CALIB_PATH="--calib=${CALIB}"
+    int8_flag="--int8"
+    calib_path="--calib=${calib}"
 else
-    INT8_FLAG=""
-    CALIB_PATH=""
+    int8_flag=""
+    calib_path=""
 fi
 # -----------------------------------------------------------------------------
-if [ "$THREADS" = true ]; then
-    THREADS_FLAG="--threads"
+if [ "$threads" = true ]; then
+    threads_flag="--threads"
 else
-    THREADS_FLAG=""
+    threads_flag=""
 fi
 # -----------------------------------------------------------------------------
-if [ "$DYNAMIC" = true ]; then
-    CxHxW="${CHANNEL}x${HEIGHT}x${WIDTH}"
-    MIN_BATCH_FLAG="--minShapes=${INPUT_NAME}:${MIN_BATCH}x${CxHxW}"
-    OPT_BATCH_FLAG="--optShapes=${INPUT_NAME}:${OPT_BATCH}x${CxHxW}"
-    MAX_BATCH_FLAG="--maxShapes=${INPUT_NAME}:${MAX_BATCH}x${CxHxW}"
-    BATCH_FLAG=""  # 动态模型下不设置固定 batch
+if [ ! -z "$use_dla_core" ]; then
+    dla_flag="--useDLACore=$use_dla_core"
 else
-    MIN_BATCH_FLAG=""
-    OPT_BATCH_FLAG=""
-    MAX_BATCH_FLAG=""
-    BATCH_FLAG="--batch=${BATCH}"
+    dla_flag=""
 fi
-# -----------------------------------------------------------------------------
-if [ -z "$DLA_CORE_ID" ]; then
-    DLA_FLAG=""
-else
-    DLA_FLAG="--useDLACore=$DLA_CORE_ID"
-fi
-# -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
 # 执行 trtexec 命令
-$TRTEXEC_PATH \
-    $MODEL_FLAG \
-    $WORKSPACE_FLAG \
-    $DLA_FLAG \
-    $FP16_FLAG \
-    $INT8_FLAG \
-    $CALIB_PATH \
-    $BATCH_FLAG \
-    $MIN_BATCH_FLAG \
-    $OPT_BATCH_FLAG \
-    $MAX_BATCH_FLAG \
-    $VERBOSE_FLAG \
-    $THREADS_FLAG \
-    $DURATION_FLAG \
-    $ITERATIONS_FLAG \
-    $STREAMS_FLAG
+$trtexec_path \
+    $model_flag \
+    $batch_flag \
+    $shapes_flag \
+    $warm_up_flag \
+    $device_flag \
+    $duration_flag \
+    $iterations_flag \
+    $streams_flag \
+    $workspace_flag \
+    $best_flag \
+    $fp16_flag \
+    $int8_flag \
+    $calib_path \
+    $verbose_flag \
+    $export_times_flag \
+    $export_output_flag \
+    $export_profile_flag \
+    $export_layer_info_flag \
+    $dla_flag \
+    2>&1 | tee trtexec_log.txt
