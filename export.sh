@@ -1,97 +1,110 @@
 #!/bin/bash
 
-# Norm args -------------------------------------------------------------------
-TRTEXEC_PATH=trtexec
-FP16=false
-INT8=false
-BEST=false
-DYNAMIC=false
-WORKSPACE=2048 # MB
-ONNX_MODEL_PATH="model.onnx"
+# === Model Options ===
+trtexec_path=trtexec
+onnx_model_path=""
 
-# Dynamic args ----------------------------------------------------------------
-MIN_BATCH=1
-OPT_BATCH=4   # Should be between MIN_BATCH and MAX_BATCH
-MAX_BATCH=8
-CHANNEL=3
-HEIGHT=256
-WIDTH=256
-INPUT_NAME="images"
+# === Build Options ===
+fp16=true
+int8=false
+best=false
+dynamic=false
+workspace=2048 # MiB
 
-# Int8 Args -------------------------------------------------------------------
-CALIB_DATA_PATH=""
-CALIB_CACHE_FILE="model_int8_calibration.cache"
+# === Dynamic args ===
+min_batch=1
+opt_batch=4   # Should be between min_batch and max_batch
+max_batch=8
+channel=3
+height=28
+width=28
+input_name="images"
 
-# ----------------------------------------------------------------------------- 
-WORKSPACE_FLAG="--workspace=$WORKSPACE"
-# ----------------------------------------------------------------------------- 
-if [ "$BEST" = true ]; then
-    BEST_FLAG="--best"
-    FP16_FLAG=""
-    INT8_FLAG=""
-    CALIB_FLAG=""
-    CALIB_CACHE_FILE_FLAG=""
-else
-    BEST_FLAG=""
-    if [ "$FP16" = true ]; then
-        FP16_FLAG="--fp16"
-    else
-        FP16_FLAG=""
-    fi
-    if [ "$INT8" = true ]; then
-        INT8_FLAG="--int8"
-        CALIB_FLAG="--calib=$CALIB_DATA_PATH"
-        CALIB_CACHE_FILE_FLAG="--calibCache=$CALIB_CACHE_FILE"
-    else
-        INT8_FLAG=""
-        CALIB_FLAG=""
-        CALIB_CACHE_FILE_FLAG=""
-    fi
+# === Int8 Args ===
+calib_data_path=""
+calib_cache_file="./model_int8_calibration.cache"
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+workspace_flag="--workspace=$workspace"
+
+# Check if ONNX model exists
+if [ ! -e "$onnx_model_path" ]; then
+  echo "Error: $onnx_model_path not found."
+  exit 1
 fi
-# ----------------------------------------------------------------------------- 
-if [ "$DYNAMIC" = true ]; then
-    CxHxW="${CHANNEL}x${HEIGHT}x${WIDTH}"
-    MIN_BATCH_FLAG="--minShapes=${INPUT_NAME}:${MIN_BATCH}x${CxHxW}"
-    OPT_BATCH_FLAG="--optShapes=${INPUT_NAME}:${OPT_BATCH}x${CxHxW}"
-    MAX_BATCH_FLAG="--maxShapes=${INPUT_NAME}:${MAX_BATCH}x${CxHxW}"
-else
-    MIN_BATCH_FLAG=""
-    OPT_BATCH_FLAG=""
-    MAX_BATCH_FLAG=""
-fi
-# Run -------------------------------------------------------------------------
-if [ -e "$ONNX_MODEL_PATH" ]; then
-  FILE_NAME=$(basename "$ONNX_MODEL_PATH")
-  SUFFIX="${FILE_NAME##*.}"
-  BASE_NAME=${FILE_NAME%.*}
-  DIR_NAME=$(dirname "$ONNX_MODEL_PATH")
-  ENGINE_MODEL_NAME="$DIR_NAME/${BASE_NAME}.engine"
 
-  if [ "$SUFFIX" != "onnx" ]; then
-    echo "Error: The file is not an ONNX file. It has a .$SUFFIX extension."
-    exit 1
+# FP16/INT8/Best flag handling
+if [ "$best" = true ]; then
+  best_flag="--best"
+  fp16_flag=""
+  int8_flag=""
+  calib_flag=""
+  calib_cache_file_flag=""
+else
+  best_flag=""
+  fp16_flag=$([ "$fp16" = true ] && echo "--fp16" || echo "")
+  if [ "$int8" = true ]; then
+    int8_flag="--int8"
+    calib_flag="--calib=$calib_data_path"
+    calib_cache_file_flag="--calibCache=$calib_cache_file"
+  else
+    int8_flag=""
+    calib_flag=""
+    calib_cache_file_flag=""
   fi
-  
-  $TRTEXEC_PATH \
-    --onnx="$ONNX_MODEL_PATH" \
-    $WORKSPACE_FLAG \
-    $MIN_BATCH_FLAG \
-    $OPT_BATCH_FLAG \
-    $MAX_BATCH_FLAG \
-    $FP16_FLAG \
-    $BEST_FLAG \
-    $INT8_FLAG \
-    $CALIB_FLAG \
-    $CALIB_CACHE_FILE_FLAG \
-    --saveEngine="$ENGINE_MODEL_NAME"
-
-  echo "----------"
-  echo "FP16: ${FP16}"
-  echo "BEST: ${BEST}"
-  echo "INT8: ${INT8}"
-  echo "ONNX Model: $ONNX_MODEL_PATH"
-  echo "TensorRT Model: $ENGINE_MODEL_NAME"
-
-else
-  echo "$ONNX_MODEL_PATH not found."
 fi
+
+# Dynamic batch sizes setup
+if [ "$dynamic" = true ]; then
+  c_h_w="${channel}x${height}x${width}"
+  min_batch_flag="--minShapes=${input_name}:${min_batch}x${c_h_w}"
+  opt_batch_flag="--optShapes=${input_name}:${opt_batch}x${c_h_w}"
+  max_batch_flag="--maxShapes=${input_name}:${max_batch}x${c_h_w}"
+else
+  min_batch_flag=""
+  opt_batch_flag=""
+  max_batch_flag=""
+fi
+
+# Generate timestamped log file
+timestamp=$(date +"%Y%m%d_%H%M%S")
+log_file="trtexec_log_${timestamp}.txt"
+
+# File details
+file_name=$(basename "$onnx_model_path")
+suffix="${file_name##*.}"
+base_name="${file_name%.*}"
+dir_name=$(dirname "$onnx_model_path")
+engine_model_name="$dir_name/${base_name}.plan"
+
+# Ensure file is ONNX
+if [ "$suffix" != "onnx" ]; then
+  echo "Error: The file is not an ONNX file. It has a .$suffix extension."
+  exit 1
+fi
+
+# Run trtexec
+$trtexec_path \
+  --onnx="$onnx_model_path" \
+  $workspace_flag \
+  $min_batch_flag \
+  $opt_batch_flag \
+  $max_batch_flag \
+  $fp16_flag \
+  $best_flag \
+  $int8_flag \
+  $calib_flag \
+  $calib_cache_file_flag \
+  --saveEngine="$engine_model_name" \
+  2>&1 | tee "$log_file"
+
+# Output summary
+echo "----------"
+echo "FP16: ${fp16}"
+echo "BEST: ${best}"
+echo "INT8: ${int8}"
+echo "ONNX Model: $onnx_model_path"
+echo "TensorRT Model: $engine_model_name"
