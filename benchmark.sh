@@ -2,18 +2,18 @@
 
 #===Model Options=== 
 trtexec_path=trtexec
-model_path="/home/seeking/llf/code/trtexec-shell/MNIST/mnist-1x3x28x28.trt850.fp32.static.engine" #model.onnx or model.engine
+model_path="" #model.onnx or model.engine
 workspace=2048          # 工作区大小（MiB）
 
 # === Inference Options ===
 batch=1
 shapes=""       #e.g.shapes=input_tensor:1x3x224x224
-iterations=3    # 指定推理执行的次数 (iterations>durations)
-duration=1      # 指定测试持续的时间(秒)
+iterations=10    # 指定推理执行的次数 
+duration=0      # 指定测试持续的时间(秒)
 warm_up=100
 streams=1       # 指定并行执行的流的数量
 threads=false
-fp16=true
+fp16=false
 int8=false
 best=false
 calib=""
@@ -22,13 +22,15 @@ verbose=false
 # === Reporting Options ===
 export_times="./times.json"
 export_output="./output.json"
-export_profile="./profile.json"
+export_profile=""
 export_layer_info="./layer_info.json"
 
 #===System Options===
 device=0
 use_dla_core="" #0,1 (DLA 通常配合 FP16 模式使用)
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 batch_flag="--batch=${batch}"
 warm_up_flag="--warmUp=${warm_up}"
@@ -106,6 +108,10 @@ else
 fi
 
 # -----------------------------------------------------------------------------
+# Generate timestamped log file
+timestamp=$(date +"%Y%m%d_%H%M%S")
+log_file="trtexec_log_${timestamp}.txt"
+
 # 执行 trtexec 命令
 $trtexec_path \
     $model_flag \
@@ -127,4 +133,4 @@ $trtexec_path \
     $export_profile_flag \
     $export_layer_info_flag \
     $dla_flag \
-    2>&1 | tee trtexec_log.txt
+    2>&1 | tee "$log_file"
